@@ -23,9 +23,38 @@ def load_file(relative_path)
   content
 end
 
+def sub_namespace_rice(line)
+  # rice/xxxx
+  if line.match?(/namespace Rice[\s\n;:]/)
+    line.gsub!("namespace Rice", "namespace Rice4RubyQt6")
+  elsif line.include?("Rice::")
+    line.gsub!("Rice::", "Rice4RubyQt6::")
+  elsif line.include?('define_module("Rice")')
+    line.gsub!('define_module("Rice")', 'define_module("Rice4RubyQt6")')
+  elsif line.include?('define_module("Libc")')
+    line.gsub!('define_module("Libc")', 'define_module_under(define_module("Rice4RubyQt6"), "Libc")')
+  elsif line.include?('define_module("Std")')
+    line.gsub!('define_module("Std")', 'define_module_under(define_module("Rice4RubyQt6"), "Std")')
+  end
+
+  # test/test_xxxx
+  if line.include?('Std::')
+    line.gsub!("Std::", "Rice4RubyQt6::Std::")
+  elsif line.include?('aModule("Std")')
+    line.gsub!('aModule("Std")', 'aModule = define_module_under(define_module("Rice4RubyQt6"), "Std")')
+  elsif line.include?('stdModule("Std")')
+    line.gsub!('stdModule("Std")', 'stdModule = define_module_under(define_module("Rice4RubyQt6"), "Std")')
+  end
+
+  # .
+  line
+end
+
 def strip_includes(content)
   content.lines.find_all do |line|
     !line.match(RICE_INCLUDE_REGEX)
+  end.map do |line|
+    sub_namespace_rice(line)
   end.join
 end
 
@@ -48,7 +77,7 @@ def add_include(path, stream)
       # Skip the header guard
     else
       # Include the line in the output
-      stream << line
+      stream << sub_namespace_rice(line)
     end
   end
 end
@@ -85,5 +114,16 @@ combine_headers('stl.hpp')
 
 puts "Building api.hpp"
 combine_headers('api.hpp')
+
+puts "Building test files"
+Dir["test/*pp"].each do |filename|
+  stream = StringIO.new
+  File.read(filename).each_line do |line|
+    stream << sub_namespace_rice(line)
+  end
+  File.open(filename, "wb") do |file|
+    file << stream.string
+  end
+end
 
 puts "Success"
