@@ -39,6 +39,7 @@ task :clean do
     cd dir do
       begin
         run_command(MAKE, "clean")
+        run_command("git checkout .")
       rescue
         # If clean crashes, that's probably means there's no Makefile
         # which is fine. That means this is a fresh checkout or the directory
@@ -52,6 +53,7 @@ end
 task :test_cpp => [:clean, :build] do
   cd "test" do
     run_command(unittest)
+    run_command("git checkout .")
   end
 end
 
