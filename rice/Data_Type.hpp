@@ -128,7 +128,7 @@ namespace Rice
      *  \return *this
      */
     template <typename Base_T = void>
-    static Data_Type<T> bind(const Module& klass);
+    static Data_Type<T> bind(const Module& klass, rb_data_type_t *data_type = nullptr);
 
     template<typename T_, typename Base_T>
     friend Rice::Data_Type<T_> define_class_under(Object parent, Identifier id, Class superKlass);
@@ -138,6 +138,9 @@ namespace Rice
 
     template<typename T_, typename Base_T>
     friend Rice::Data_Type<T_> define_class(char const * name);
+
+    template<typename T_, typename Base_T>
+    friend Rice::Data_Type<T_> declare_class_under(Object parent, char const* name, rb_data_type_t *data_type);
 
     template<typename Method_T, typename...Arg_Ts>
     void wrap_native_method(VALUE klass, std::string name, Method_T&& function, const Arg_Ts&...args);
@@ -192,6 +195,13 @@ namespace Rice
    */
   template<typename T, typename Base_T = void>
   Data_Type<T> define_class(char const* name);
+
+  //! Identical to define_class_under, except it use an existed RTypedData.
+  /*! This allows you to bind the Data_Type<T> instance in every DLL on Win32
+   *  to the same RTypedData, see [issue#355](https://github.com/ruby-rice/rice/issues/355).
+   */
+  template<typename T, typename Base_T = void>
+  Data_Type<T> declare_class_under(Object parent, char const* name, rb_data_type_t *data_type);
 }
 
 #endif // Rice__Data_Type__hpp_

@@ -42,7 +42,7 @@ namespace Rice
 
   template<typename T>
   template <typename Base_T>
-  inline Data_Type<T> Data_Type<T>::bind(const Module& klass)
+  inline Data_Type<T> Data_Type<T>::bind(const Module& klass, rb_data_type_t *data_type)
   {
     if (is_bound())
     {
@@ -52,6 +52,9 @@ namespace Rice
 
     klass_ = klass;
 
+  if (data_type) {
+    rb_data_type_ = data_type;
+  } else {
     rb_data_type_ = new rb_data_type_t();
     rb_data_type_->wrap_struct_name = strdup(Rice::detail::protect(rb_class2name, klass_));
     rb_data_type_->function.dmark = reinterpret_cast<void(*)(void*)>(&Rice::ruby_mark_internal<T>);
@@ -64,6 +67,7 @@ namespace Rice
     {
       rb_data_type_->parent = Data_Type<Base_T>::ruby_data_type();
     }
+  }
 
     auto instances = unbound_instances();
     for (auto instance: instances)
@@ -342,6 +346,19 @@ namespace Rice
     Class klass = define_class(name, superKlass);
     klass.undef_creation_funcs();
     return Data_Type<T>::template bind<Base_T>(klass);
+  }
+
+  template<typename T, typename Base_T>
+  Data_Type<T> declare_class_under(Object parent, char const* name, rb_data_type_t *data_type)
+  {
+    Identifier id(name);
+    if (Rice::Data_Type<T>::check_defined(id.str(), parent))
+    {
+      return Data_Type<T>();
+    }
+
+    Class klass = parent.const_get(id).value();
+    return Data_Type<T>::template bind<Base_T>(klass, data_type);
   }
 
   template<typename T>
